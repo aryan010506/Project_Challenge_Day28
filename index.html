@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mini E-Commerce with Cart</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    h1, h2 { text-align: center; color: #333; }
+    .products, .cart {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .product, .cart-item {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .product button, .cart-item button {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .cart-summary {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+    .add-product {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      max-width: 400px;
+      margin: 20px auto;
+    }
+    input {
+      margin: 5px 0;
+      padding: 8px;
+      width: 100%;
+    }
+    button.add-btn {
+      background: #28a745;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mini E-Commerce</h1>
+
+  <div class="add-product">
+    <h3>Add New Product</h3>
+    <input type="text" id="name" placeholder="Product name">
+    <input type="number" id="price" placeholder="Price">
+    <input type="number" id="stock" placeholder="Stock">
+    <button class="add-btn" onclick="addProduct()">Add Product</button>
+  </div>
+
+  <h2>Products</h2>
+  <div class="products" id="products"></div>
+
+  <h2>Your Cart</h2>
+  <div class="cart" id="cart"></div>
+  <div class="cart-summary" id="cart-summary"></div>
+
+  <script>
+    const API = "http://127.0.0.1:5000/products";
+    let cart = [];
+
+    async function loadProducts() {
+      const res = await fetch(API);
+      const data = await res.json();
+      const container = document.getElementById("products");
+      container.innerHTML = "";
+      data.forEach(p => {
+        container.innerHTML += `
+          <div class='product'>
+            <h3>${p.name}</h3>
+            <p>Price: ₹${p.price}</p>
+            <p>Stock: ${p.stock}</p>
+            <button onclick="addToCart(${p.id}, '${p.name}', ${p.price})">Add to Cart</button>
+          </div>`;
+      });
+    }
+
+    async function addProduct() {
+      const name = document.getElementById("name").value;
+      const price = document.getElementById("price").value;
+      const stock = document.getElementById("stock").value;
+      await fetch(API, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, price, stock})
+      });
+      document.getElementById("name").value="";
+      document.getElementById("price").value="";
+      document.getElementById("stock").value="";
+      loadProducts();
+    }
+
+    function addToCart(id, name, price) {
+      const item = cart.find(i => i.id === id);
+      if (item) {
+        item.qty++;
+      } else {
+        cart.push({id, name, price, qty:1});
+      }
+      renderCart();
+    }
+
+    function removeFromCart(id) {
+      cart = cart.filter(i => i.id !== id);
+      renderCart();
+    }
+
+    function renderCart() {
+      const cartContainer = document.getElementById("cart");
+      cartContainer.innerHTML = "";
+      let total = 0;
+      cart.forEach(item => {
+        total += item.price * item.qty;
+        cartContainer.innerHTML += `
+          <div class='cart-item'>
+            <h4>${item.name}</h4>
+            <p>Price: ₹${item.price}</p>
+            <p>Quantity: ${item.qty}</p>
+            <button onclick="removeFromCart(${item.id})">Remove</button>
+          </div>`;
+      });
+      document.getElementById("cart-summary").innerHTML = `<h3>Total: ₹${total}</h3>`;
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>
